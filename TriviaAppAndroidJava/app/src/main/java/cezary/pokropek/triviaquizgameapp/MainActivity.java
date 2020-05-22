@@ -1,6 +1,10 @@
 package cezary.pokropek.triviaquizgameapp;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
+import android.media.AudioAttributes;
+import android.media.SoundPool;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,6 +16,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
@@ -40,7 +45,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Score score;
     private Prefs prefs;
 
+    private SoundPool soundPool;
+    private int sound_correct, sound_false;
 
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,6 +91,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 //        Log.d("Main", "onCreate: " + questionList);
 
+        // Sound clip multimedia
+
+        @SuppressLint({"NewApi", "LocalSuppress"}) AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                .build();
+        soundPool = new SoundPool.Builder()
+                .setMaxStreams(4)
+                .setAudioAttributes(audioAttributes)
+                .build();
+
+        sound_correct = soundPool.load(this,R.raw.correct, 1);
+        sound_false = soundPool.load(this, R.raw.defeat_two, 1);
+
     }
 
     @Override
@@ -113,10 +136,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         boolean answerIsTrue = questionList.get(currentQuestionIndex).isAnswerTrue();
         int toastMessageId = 0;
         if (userChooseCorrect == answerIsTrue) {
+            soundPool.play(sound_correct, 1, 1, 0, 0,1);
             addPoints();
             fadeView();
             toastMessageId = R.string.correct_answer;
         } else {
+            soundPool.play(sound_false, 1, 1, 0, 0,1);
             decrementPoints();
             shakeAnimation();
             toastMessageId = R.string.wrong_answer;
@@ -221,6 +246,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onPause();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (soundPool != null) {
+            soundPool.release();
+            soundPool = null;
+        }
+    }
 
 
-}
+
+    }
